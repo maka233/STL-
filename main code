@@ -1,0 +1,61 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import statsmodels.api as sm
+
+# 假设数据已经存储在名为 'data.csv' 的CSV文件中，第一列是时间序列索引，第二列是数据
+data = pd.read_excel('C:/Users/86135/Desktop/作业及讲义/大二下/数模校赛/冰川/csv数据/aaa所有数据（index=日期）.xlsx', index_col='date')
+ts = data.loc['2013-02-01':'2020-11-01', 'distance']
+
+# 可视化时间序列数据
+plt.figure(figsize=(10, 6))
+ts.plot()
+plt.title('Time Series Data')
+plt.xlabel('Date')
+plt.ylabel('Value')
+plt.show()
+
+# 使用rolling方法计算移动平均
+rolling_mean = ts.rolling(window=12).mean()
+
+# 绘制移动平均图
+plt.figure(figsize=(10, 6))
+plt.plot(ts, label='Original')
+plt.plot(rolling_mean, label='Rolling Mean')
+plt.title('Trend Analysis')
+plt.xlabel('Date')
+plt.ylabel('Value')
+plt.legend()
+plt.show()
+
+# 趋势分析
+res = sm.tsa.seasonal_decompose(ts)
+res.plot()
+plt.savefig('C:/Users/86135/Desktop/作业及讲义/大二下/数模校赛/冰川/csv数据/分解.png', dpi = 1000)
+plt.show()
+
+# 提取趋势、季节性和残差序列
+trend_series = res.trend
+seasonal_series = res.seasonal
+residual_series = res.resid
+
+# 存储序列的值
+insert_index = pd.Timestamp('2013-02-01')
+trend_df = pd.DataFrame({'Trend': trend_series}, index=ts.index)
+data = pd.concat([data.loc[:insert_index], trend_df, data.loc[insert_index+pd.Timedelta(days=1):]], axis=1)
+
+seasonal_df = pd.DataFrame({'Seasonal': seasonal_series}, index=ts.index)
+data = pd.concat([data.loc[:insert_index], seasonal_df, data.loc[insert_index+pd.Timedelta(days=1):]], axis=1)
+
+residual_df = pd.DataFrame({'Residual': residual_series}, index=ts.index)
+data = pd.concat([data.loc[:insert_index], residual_df, data.loc[insert_index+pd.Timedelta(days=1):]], axis=1)
+
+data.to_csv('C:/Users/86135/Desktop/作业及讲义/大二下/数模校赛/冰川/csv数据/3.1 分解结果.csv')
+
+# 步骤5：自相关性分析
+# 使用自相关函数（ACF）和部分自相关函数（PACF）绘制自相关性图
+fig, ax = plt.subplots(2, 1, figsize=(10, 8))
+sm.graphics.tsa.plot_acf(ts, lags=30, ax=ax[0])
+sm.graphics.tsa.plot_pacf(ts, lags=30, ax=ax[1])
+plt.show()
